@@ -1,0 +1,39 @@
+{
+  "environments": {
+    "dev": {
+      "profile": "fd-az",
+      "storage_type": "mlflow",
+      "properties": {
+        "workspace_directory": "/Shared/robkisk/dbx/db_sb_cicd",
+        "artifact_location": "dbfs:/Shared/robkisk/dbx/projects/db_sb_cicd"
+      }
+    },
+    "staging": {
+      "profile": "fd-az",
+      "storage_type": "mlflow",
+      "properties": {
+        "workspace_directory": "/Shared/robkisk/dbx/db_sb_cicd",
+        "artifact_location": "dbfs:/Shared/robkisk/dbx/projects/db_sb_cicd"
+      }
+    },
+    "prod": {
+      "profile": "fd-az",
+      "storage_type": "mlflow",
+      "properties": {
+        "workspace_directory": "/Shared/robkisk/dbx/db_sb_cicd",
+        "artifact_location": "dbfs:/Shared/robkisk/dbx/projects/db_sb_cicd"
+      }
+    },
+    "default": {
+      "profile": "DEFAULT",
+      "storage_type": "mlflow",
+      "properties": {
+        "workspace_directory": "/Shared/robkisk/dbx/db_sb_cicd",
+        "artifact_location": "dbfs:/Shared/robkisk/dbx/projects/db_sb_cicd"
+      }
+    }
+  },
+  "inplace_jinja_support": false,
+  "failsafe_cluster_reuse_with_assets": false,
+  "context_based_upload_for_execute": false
+}

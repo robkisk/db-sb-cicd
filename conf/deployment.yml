@@ -1,0 +1,152 @@
+custom:
+  default-cluster-spec: &default-cluster-spec
+    spark_version: "11.3.x-cpu-ml-scala2.12"
+    node_type_id: "Standard_DS3_v2"
+    driver_node_type_id: "Standard_DS3_v2"
+    num_workers: 1
+
+  dev-cluster-config: &dev-cluster-config
+    new_cluster:
+      <<: *default-cluster-spec
+
+  staging-cluster-config: &staging-cluster-config
+    new_cluster:
+      <<: *default-cluster-spec
+
+  prod-cluster-config: &prod-cluster-config
+    new_cluster:
+      <<: *default-cluster-spec
+
+environments:
+  dev:
+    workflows:
+      - name: "DEV-dbx-debug-wf"
+        job_clusters:
+          - job_cluster_key: "default"
+            <<: *dev-cluster-config
+        tasks:
+          - task_key: "simple"
+            job_cluster_key: "default"
+            python_wheel_task:
+              package_name: "db_sb_cicd"
+              entry_point: "etl"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/dev/.dev.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_etl_config.yml",
+                ]
+      - name: "DEV-dbx-debug-sample-multitask"
+        job_clusters:
+          - job_cluster_key: "default"
+            <<: *dev-cluster-config
+        tasks:
+          - task_key: "etl"
+            job_cluster_key: "default"
+            spark_python_task:
+              python_file: "file://db_sb_cicd/tasks/sample_etl_task.py"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/dev/.dev.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_etl_config.yml",
+                ]
+          - task_key: "ml"
+            depends_on:
+              - task_key: "etl"
+            job_cluster_key: "default"
+            python_wheel_task:
+              package_name: "db_sb_cicd"
+              entry_point: "ml"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/dev/.dev.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_ml_config.yml",
+                ]
+  staging:
+    workflows:
+      - name: "STAGING-dbx-debug-sample-integration-test"
+        tasks:
+          - task_key: "integration-test"
+            <<: *staging-cluster-config
+            spark_python_task:
+              python_file: "file://tests/integration/e2e_test.py"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/staging/.staging.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_etl_config.yml",
+                ]
+  prod:
+    workflows:
+      - name: "PROD-dbx-debug-wf"
+        job_clusters:
+          - job_cluster_key: "default"
+            <<: *prod-cluster-config
+        git_source:
+          git_url: https://github.com/robkisk/db-sb-cicd.git
+          git_provider: "github"
+          git_branch: "main"
+        tasks:
+          - task_key: "simple"
+            job_cluster_key: "default"
+            python_wheel_task:
+              package_name: "db_sb_cicd"
+              entry_point: "etl"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/prod/.prod.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_etl_config.yml",
+                ]
+      - name: "PROD-dbx-debug-sample-multitask"
+        job_clusters:
+          - job_cluster_key: "default"
+            <<: *prod-cluster-config
+        tasks:
+          - task_key: "etl"
+            job_cluster_key: "default"
+            spark_python_task:
+              python_file: "file://db_sb_cicd/tasks/sample_etl_task.py"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/prod/.prod.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_etl_config.yml",
+                ]
+          - task_key: "ml"
+            depends_on:
+              - task_key: "etl"
+            job_cluster_key: "default"
+            python_wheel_task:
+              package_name: "db_sb_cicd"
+              entry_point: "ml"
+              parameters:
+                [
+                  "--base-data-params",
+                  "file:fuse://conf/.base_data_params.env",
+                  "--env",
+                  "file:fuse://conf/prod/.prod.env",
+                  "--conf-file",
+                  "file:fuse://conf/tasks/sample_ml_config.yml",
+                ]
+

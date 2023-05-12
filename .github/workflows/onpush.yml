@@ -1,0 +1,60 @@
+name: CI pipeline
+
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "v*" # this tag type is used for release pipelines
+
+jobs:
+  ci-pipeline:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_STAGING_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install pip
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies and project in dev mode
+        run: |
+          pip install -e ".[local,test]"
+
+      - name: Black format check
+        continue-on-error: true #for now, just inform
+        run: |
+          echo "Check black formatting"
+          black db_sb_cicd --check
+
+      - name: Run unit tests
+        run: |
+          echo "Run unit tests"
+          pytest tests/unit
+
+      - name: Deploy dbx deploy in dev [dev environment]
+        run: |
+          dbx deploy -e dev --workflows=DEV-dbx-debug-wf
+
+      - name: Run dbx launch in dev [dev environment]
+        run: |
+          dbx launch -e dev DEV-dbx-debug-wf
+
+      - name: Deploy integration test [staging environment] (jobless)
+        run: |
+          dbx deploy -e staging --workflows=STAGING-dbx-debug-sample-integration-test --assets-only
+
+      - name: Run integration test [staging environment]
+        run: |
+          dbx launch -e staging STAGING-dbx-debug-sample-integration-test --from-assets --trace
+
